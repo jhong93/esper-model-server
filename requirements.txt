@@ -1,0 +1,11 @@
+flask
+h5py
+matplotlib
+numpy
+opencv-python
+psutil
+pytest
+requests
+scikit-learn
+scipy
+tensorflow==1.7
