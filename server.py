@@ -2,8 +2,8 @@
 
 import argparse
 import cv2
-import json
 import math
+import numpy as np
 import os
 import pathlib
 from collections import namedtuple
@@ -93,17 +93,28 @@ def build_app(models):
                 result[img_path] = bboxes
         return jsonify(result)
 
-    @app.route('/face-embed')
+    @app.route('/face-embed', methods=['GET', 'POST'])
     def face_embed():
-        img_path = request.args.get('path')
-        x1 = int(request.args.get('x1'))
-        x2 = int(request.args.get('x2'))
-        y1 = int(request.args.get('y1'))
-        y2 = int(request.args.get('y2'))
-        img = cv2.imread(img_path)
-        cropped_img = img[y1:y2, x1:x2, :]
-        assert cropped_img.size > 0
-        emb = models.face_embeddor.embed(cropped_img)
+        if request.method == 'POST':
+            width = int(request.args.get('width'))
+            height = int(request.args.get('height'))
+            img_bin = request.get_data()
+            if len(img_bin) == 0:
+                abort(400)
+            img = np.fromstring(img_bin, dtype=np.uint8).reshape(
+                (height, width, 3))
+        elif request.method == 'GET' and 'path' in request.args:
+            img_path = request.args.get('path')
+            x1 = int(request.args.get('x1'))
+            x2 = int(request.args.get('x2'))
+            y1 = int(request.args.get('y1'))
+            y2 = int(request.args.get('y2'))
+            img = cv2.imread(img_path)
+            img = img[y1:y2, x1:x2, :]
+        else:
+            abort(400)
+        assert img.size > 0
+        emb = models.face_embeddor.embed(img)
         return jsonify([float(x) for x in emb.tolist()])
 
     @app.route('/')
